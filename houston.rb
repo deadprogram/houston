@@ -48,7 +48,7 @@ class Houston < ArduinoSketch
   
   def set_elevator
     if @y < 517
-      @elevator_direction = 0
+      @elevator_direction = 1
       @deflection = 547 - @y
       @elevator_deflection = (@deflection * 90.0) / 373
       serial_print "e u "
@@ -67,7 +67,7 @@ class Houston < ArduinoSketch
     end
     
     if (@y >= 517) &&  (@y <= 577)
-      @elevator_direction = 1
+      @elevator_direction = 0
       serial_print "e c"
       serial_print '\r'
     end
@@ -77,7 +77,7 @@ class Houston < ArduinoSketch
   
   def set_rudder
     if @x < 480
-      @rudder_direction = 0
+      @rudder_direction = 1
       @deflection = 515 - @x
       @rudder_deflection = (@deflection * 90.0) / 375
       serial_print "r r "
@@ -96,7 +96,7 @@ class Houston < ArduinoSketch
     end
     
     if (@x >= 480) &&  (@x <= 540)
-      @rudder_direction = 1
+      @rudder_direction = 0
       serial_print "r c"
       serial_print '\r'
     end
@@ -127,7 +127,7 @@ class Houston < ArduinoSketch
     end
     
     if (@throttle >= 450) && (@throttle <= 648)
-      @throttle_direction = 1
+      @throttle_direction = 0
       @throttle_speed = 0
       serial_print "t f 0"
       serial_print '\r'
@@ -152,32 +152,33 @@ class Houston < ArduinoSketch
       # my_lcd.print "x: "
       # my_lcd.print @x
 
-      my_lcd.print "r: "
-      if @rudder_direction == 0
-        my_lcd.print "r "
+      #my_lcd.print "  e: "
+      if @elevator_direction == 1
+        my_lcd.print "up "
+        my_lcd.print @elevator_deflection
+      end
+      if @elevator_direction == 0
+        my_lcd.print "lvl "
+      end
+      if @elevator_direction == 2
+        my_lcd.print "dwn "
+        my_lcd.print @elevator_deflection
+      end
+
+      #my_lcd.print "r: "
+      if @rudder_direction == 1
+        my_lcd.print "  right "
         my_lcd.print @rudder_deflection
       end
-      if @rudder_direction == 1
-        my_lcd.print "c "
+      if @rudder_direction == 0
+        my_lcd.print "  ctr "
       end
       if @rudder_direction == 2
-        my_lcd.print "l "
+        my_lcd.print "  left "
         my_lcd.print @rudder_deflection
       end
 
     
-      my_lcd.print "  e: "
-      if @elevator_direction == 0
-        my_lcd.print "u "
-        my_lcd.print @elevator_deflection
-      end
-      if @elevator_direction == 1
-        my_lcd.print "c "
-      end
-      if @elevator_direction == 2
-        my_lcd.print "d "
-        my_lcd.print @elevator_deflection
-      end
 		
   		my_lcd.ss_selectLineTwo
   		my_lcd.print "throttle: "
