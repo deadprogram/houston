@@ -23,6 +23,10 @@ class Houston < ArduinoSketch
 
   @rudder_deflection = "0, long"
   @rudder_direction = "1, byte" 
+
+  @speed = "0, unsigned long"
+  @throttle_speed = "0, unsigned long"
+  @throttle_direction = "1, byte" 
   
   @display_refresh_rate = "1000, unsigned long"
   @display_last_refresh_time = "0, unsigned long"
@@ -34,9 +38,10 @@ class Houston < ArduinoSketch
     @y = analogRead(joystick_y)
     @throttle = analogRead(joystick_throttle)
     
-    clear_response_buffer
+    #clear_response_buffer
     set_elevator
     set_rudder
+    set_throttle
     
 		update_display
 		delay(100)
@@ -94,6 +99,50 @@ class Houston < ArduinoSketch
     if (@x >= 480) &&  (@x <= 540)
       @rudder_direction = 1
       serial_print "r c"
+      serial_print '\r'
+    end
+    
+    clear_response_buffer
+  end
+  
+  def set_throttle
+    if @throttle < 450
+      @throttle_direction = 2
+      @speed = @throttle - 180.0
+      @throttle_speed = (@speed / 273.0) * 100.0
+      @throttle_speed = 100 - @throttle_speed
+      serial_print "t r "
+      serial_print @throttle_speed
+      serial_print '\r'
+    end
+    
+    if @throttle > 648
+      @throttle_direction = 1
+      
+      
+#      @speed = (273 - (921 - @throttle)) * 10000
+#      @throttle_speed = (@speed / 273.0) / 100.0
+      @speed = 921 - @throttle
+      @speed = 273 - @speed
+      @speed = @speed * 10000
+      #@speed = (273 - (921 - @throttle)) * 10000
+      @throttle_speed = (@speed / 273) / 100.0
+      
+      
+      
+      #@speed = 20 - @speed
+      
+      #@throttle_speed = (@speed * 50.0) / 273.0
+      #@throttle_speed = @throttle_speed / 546.0
+      serial_print "t f "
+      serial_print @throttle_speed
+      serial_print '\r'
+    end
+    
+    if (@throttle >= 450) && (@throttle <= 648)
+      @throttle_direction = 1
+      @throttle_speed = 0
+      serial_print "t f 0"
       serial_print '\r'
     end
     
