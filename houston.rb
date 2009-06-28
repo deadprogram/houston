@@ -77,20 +77,20 @@ class Houston < ArduinoSketch
   
   def set_rudder
     if @x < 480
-      @rudder_direction = 1
+      @rudder_direction = 2
       @deflection = 515 - @x
       @rudder_deflection = (@deflection * 90.0) / 375
-      serial_print "r r "
+      serial_print "r l "
       serial_print @rudder_deflection
       serial_print '\r'
     end
     
     if @x > 540
-      @rudder_direction = 2
+      @rudder_direction = 1
       @deflection = 890 - @x
       @rudder_deflection = (@deflection * 90.0) / 375
       @rudder_deflection = 90 - @rudder_deflection
-      serial_print "r l "
+      serial_print "r r "
       serial_print @rudder_deflection
       serial_print '\r'
     end
