@@ -38,7 +38,6 @@ class Houston < ArduinoSketch
     @y = analogRead(joystick_y)
     @throttle = analogRead(joystick_throttle)
     
-    #clear_response_buffer
     set_elevator
     set_rudder
     set_throttle
@@ -118,22 +117,10 @@ class Houston < ArduinoSketch
     
     if @throttle > 648
       @throttle_direction = 1
-      
-      
-#      @speed = (273 - (921 - @throttle)) * 10000
-#      @throttle_speed = (@speed / 273.0) / 100.0
       @speed = 921 - @throttle
       @speed = 273 - @speed
       @speed = @speed * 10000
-      #@speed = (273 - (921 - @throttle)) * 10000
       @throttle_speed = (@speed / 273) / 100.0
-      
-      
-      
-      #@speed = 20 - @speed
-      
-      #@throttle_speed = (@speed * 50.0) / 273.0
-      #@throttle_speed = @throttle_speed / 546.0
       serial_print "t f "
       serial_print @throttle_speed
       serial_print '\r'
