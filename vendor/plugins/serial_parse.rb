@@ -12,6 +12,12 @@ class SerialParse < ArduinoPlugin
   # initialize parser vars
   add_to_setup "current_response_received_complete = false;"
   
+  void do_serial_parsing() {}
+  
+  bool response_is_complete () {
+    return current_response_received_complete ;
+  }
+  
   void copy_response_buffer(char* str) {
     for(int i = 0; i < max_message_length; i++){
       str[i] = response_buffer[i] ;
@@ -27,7 +33,7 @@ class SerialParse < ArduinoPlugin
     current_response_received_complete = false ;
   }
   
-  void serial_read_and_parse() {
+  void read_response() {
     if(current_response_received_complete) {
       reset_response_buffer();
     }

@@ -38,6 +38,8 @@ class Houston < ArduinoSketch
   define "AUTOPILOT_OFF 0"
   define "AUTOPILOT_ON 1"
   
+  @controls_refresh_rate = "100, unsigned long"
+  @controls_last_refresh_time = "0, unsigned long"
   @x = "0, long"
   @y = "0, long"
   @throttle_reading = "0, long"
@@ -60,20 +62,38 @@ class Houston < ArduinoSketch
   @current_msg = "All Systems Go  "
   @response_length = "0, long"
   
+  @message_to_display = false
+  #@message_to_display = "false, boolean"
+  @messages_expected = "0, int"
+  #@messages_expected = 0
+  
   def loop
     softserial_sparkfun_lcd_init
+    do_serial_parsing
     
-    check_buttons    
-    @x = analogRead(joystick_x)
-    @y = analogRead(joystick_y)
-    @throttle_reading = analogRead(joystick_throttle)
+    if @messages_expected > 0
+      process_messages
+    else
+      check_controls
+    end
+  	
+  	update_display
+  end
+  
+  def check_controls
+    if (millis() - @controls_last_refresh_time > @controls_refresh_rate)
+      @x = analogRead(joystick_x)
+      @y = analogRead(joystick_y)
+      @throttle_reading = analogRead(joystick_throttle)
     
-    set_elevator
-    set_rudder
-    set_throttle
-    
-		update_display
-		delay(100)
+      set_elevator
+      set_rudder
+      set_throttle
+
+      check_buttons    
+  		
+      @controls_last_refresh_time = millis()
+    end
   end
   
   def check_buttons
@@ -86,29 +106,45 @@ class Houston < ArduinoSketch
     if @y < ELEVATOR_LOWER_DETANTE
       @elevator_direction = ELEVATOR_UP
       @deflection = 547 - @y
-      @elevator_deflection = (@deflection * 90.0) / 373
-      serial_print "e u "
-      serial_print @elevator_deflection
-      serial_print '\r'
+      @deflection = (@deflection * 90.0) / 373
+      
+      if @elevator_deflection != @deflection
+        @elevator_deflection = @deflection
+        serial_print "e u "
+        serial_print @elevator_deflection
+        serial_print '\r'
+        ignore_next_message
+      end
     end
     
     if @y > ELEVATOR_HIGHER_DETANTE
       @elevator_direction = ELEVATOR_DOWN
       @deflection = 920 - @y
-      @elevator_deflection = (@deflection * 90.0) / 373
-      @elevator_deflection = 90 - @elevator_deflection
-      serial_print "e d "
-      serial_print @elevator_deflection
-      serial_print '\r'
+      @deflection = (@deflection * 90.0) / 373
+      @deflection = 90 - @deflection
+      
+      if @elevator_deflection != @deflection
+        @elevator_deflection = @deflection
+        serial_print "e d "
+        serial_print @elevator_deflection
+        serial_print '\r'
+        ignore_next_message
+      end
+        
     end
     
     if (@y >= ELEVATOR_LOWER_DETANTE) &&  (@y <= ELEVATOR_HIGHER_DETANTE)
       @elevator_direction = ELEVATOR_CENTER
-      serial_print "e c"
-      serial_print '\r'
+      
+      if @elevator_deflection != 0
+        @elevator_deflection = 0
+        serial_print "e c"
+        serial_print '\r'
+        ignore_next_message
+      end
+      
     end
     
-    clear_response_buffer
   end
   
   def set_rudder
@@ -116,39 +152,58 @@ class Houston < ArduinoSketch
       @rudder_direction = RUDDER_RIGHT
       @deflection = 515 - @x
       @rudder_deflection = (@deflection * 90.0) / 375
-      serial_print "r r "
-      serial_print @rudder_deflection
-      serial_print '\r'
+      
+      if @rudder_deflection != @deflection
+        @rudder_deflection = @deflection
+        serial_print "r r "
+        serial_print @rudder_deflection
+        serial_print '\r'
+        ignore_next_message
+      end
     end
     
     if @x > RUDDER_HIGHER_DETANTE
       @rudder_direction = RUDDER_LEFT
       @deflection = 890 - @x
-      @rudder_deflection = (@deflection * 90.0) / 375
-      @rudder_deflection = 90 - @rudder_deflection
-      serial_print "r l "
-      serial_print @rudder_deflection
-      serial_print '\r'
+      @deflection = (@deflection * 90.0) / 375
+      @deflection = 90 - @deflection
+      
+      if @rudder_deflection != @deflection
+        @rudder_deflection = @deflection
+        serial_print "r l "
+        serial_print @rudder_deflection
+        serial_print '\r'
+        ignore_next_message
+      end
     end
     
     if (@x >= RUDDER_LOWER_DETANTE) &&  (@x <= RUDDER_HIGHER_DETANTE)
       @rudder_direction = RUDDER_CENTER
-      serial_print "r c"
-      serial_print '\r'
+      
+      if @rudder_deflection != 0
+        @rudder_deflection = 0
+        serial_print "r c"
+        serial_print '\r'
+        ignore_next_message
+      end
     end
     
-    clear_response_buffer
   end
   
   def set_throttle
     if @throttle_reading < THROTTLE_LOWER_DETANTE
       @throttle_direction = THROTTLE_REVERSE
       @speed = @throttle_reading - 180.0
-      @throttle_speed = (@speed / 273.0) * 100.0
-      @throttle_speed = 100 - @throttle_speed
-      serial_print "t r "
-      serial_print @throttle_speed
-      serial_print '\r'
+      @speed = (@speed / 273.0) * 100.0
+      @speed = 100 - @speed
+
+      if @throttle_speed != @speed
+        @throttle_speed = @speed
+        serial_print "t r "
+        serial_print @throttle_speed
+        serial_print '\r'
+        ignore_next_message
+      end
     end
     
     if @throttle_reading > THROTTLE_HIGHER_DETANTE
@@ -156,20 +211,28 @@ class Houston < ArduinoSketch
       @speed = 921 - @throttle_reading
       @speed = 273 - @speed
       @speed = @speed * 10000
-      @throttle_speed = (@speed / 273) / 100.0
-      serial_print "t f "
-      serial_print @throttle_speed
-      serial_print '\r'
+      @speed = (@speed / 273) / 100.0
+      
+      if @throttle_speed != @speed
+        @throttle_speed = @speed
+        serial_print "t f "
+        serial_print @throttle_speed
+        serial_print '\r'
+        ignore_next_message
+      end
     end
     
     if (@throttle_reading >= THROTTLE_LOWER_DETANTE) && (@throttle_reading <= THROTTLE_HIGHER_DETANTE)
       @throttle_direction = THROTTLE_OFF
-      @throttle_speed = 0
-      serial_print "t f 0"
-      serial_print '\r'
+      
+      if @throttle_speed != 0
+        @throttle_speed = 0
+        serial_print "t f 0"
+        serial_print '\r'
+        ignore_next_message
+      end
     end
     
-    clear_response_buffer
   end
   
   def set_autopilot_off
@@ -178,7 +241,7 @@ class Houston < ArduinoSketch
     serial_print "a 0"
     serial_print '\r'
     
-    clear_response_buffer
+    ignore_next_message
   end
 
   def set_autopilot_on
@@ -187,22 +250,45 @@ class Houston < ArduinoSketch
     serial_print "a 1"
     serial_print '\r'
     
-    clear_response_buffer
+    ignore_next_message
   end
   
   def check_battery_status
     serial_print "i b"
     serial_print '\r'
     
-    serial_read_and_parse
-    copy_response_buffer(@current_msg)    
+    display_next_message
+    # serial_read_and_parse
+    # copy_response_buffer(@current_msg)    
   end
   
-  def clear_response_buffer
-    while serial_available do
-      serial_read
+  def ignore_next_message
+    @messages_expected = @messages_expected + 1
+  end
+  
+  def display_next_message
+    @messages_expected = @messages_expected + 1
+    @message_to_display = true
+  end
+  
+  def process_messages
+    read_response
+    process_response if response_is_complete()
+  end
+  
+  def process_response
+    @messages_expected = @messages_expected - 1
+    if @messages_expected == 0 && @message_to_display
+      copy_response_buffer(@current_msg)
+      @message_to_display = false
     end
   end
+  
+  # def clear_response_buffer
+  #   while serial_available do
+  #     serial_read
+  #   end
+  # end
   
   def update_display
     if (millis() - @display_last_refresh_time > @display_refresh_rate)
