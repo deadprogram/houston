@@ -15,7 +15,7 @@ class Houston < ArduinoSketch
   input_pin 11, :as => :battery_status_button, :device => :button
   
   # xbee used for communication with ground station
-  serial_begin :rate => 9600
+  serial_begin :rate => 19200
   
   define "ELEVATOR_LOWER_DETANTE 517"
   define "ELEVATOR_HIGHER_DETANTE 577"
@@ -258,8 +258,6 @@ class Houston < ArduinoSketch
     serial_print '\r'
     
     display_next_message
-    # serial_read_and_parse
-    # copy_response_buffer(@current_msg)    
   end
   
   def ignore_next_message
@@ -284,16 +282,9 @@ class Houston < ArduinoSketch
     end
   end
   
-  # def clear_response_buffer
-  #   while serial_available do
-  #     serial_read
-  #   end
-  # end
-  
   def update_display
     if (millis() - @display_last_refresh_time > @display_refresh_rate)
     
-      #my_lcd.backlightOn
       my_lcd.ss_clearLCD
     
       my_lcd.ss_selectLineOne
@@ -301,26 +292,6 @@ class Houston < ArduinoSketch
       # display message
       my_lcd.print @current_msg
       
-      # my_lcd.print "autopilot "
-      # if @autopilot_status == AUTOPILOT_OFF
-      #   my_lcd.print "off"
-      # end
-      # if @autopilot_status == AUTOPILOT_ON
-      #   my_lcd.print "on"
-      # end
-
-      # if @rudder_direction == 1
-      #   my_lcd.print "  right "
-      #   my_lcd.print @rudder_deflection
-      # end
-      # if @rudder_direction == 0
-      #   my_lcd.print "  ctr "
-      # end
-      # if @rudder_direction == 2
-      #   my_lcd.print "  left "
-      #   my_lcd.print @rudder_deflection
-      # end
-		  
 		  # display throttle
   		my_lcd.ss_selectLineTwo
   		my_lcd.print "throttle "
