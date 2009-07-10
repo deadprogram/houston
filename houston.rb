@@ -66,6 +66,10 @@ class Houston < ArduinoSketch
   #@message_to_display = "false, boolean"
   @messages_expected = "0, int"
   #@messages_expected = 0
+
+  # timeout
+  @response_timeout_length = "1000, unsigned long"
+  @last_response_time = "0, unsigned long"
   
   def loop
     softserial_sparkfun_lcd_init
@@ -271,7 +275,19 @@ class Houston < ArduinoSketch
   
   def process_messages
     read_response
+    return true if timeout_waiting_for_response()
     process_response if response_is_complete()
+  end
+  
+  # timeout waiting for message, so give up waiting for the rest of them
+  def timeout_waiting_for_response
+    if (millis() - last_response_time > @response_timeout_length)
+      @messages_expected = 0
+      reset_last_response
+      return true
+    else
+      return false
+    end
   end
   
   def process_response
