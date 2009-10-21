@@ -3,28 +3,25 @@
 
 class Houston < ArduinoSketch
   
-  input_pin 1, :as => :joystick_y
-  input_pin 2, :as => :joystick_x
-  input_pin 3, :as => :joystick_throttle
-  
   software_serial 6, 7, :as => :my_lcd, :rate => 9600
-  
-  input_pin 8, :as => :autopilot_off_button, :device => :button
-  input_pin 9, :as => :autopilot_on_button, :device => :button
-  #input_pin 10, :as => :autopilot_on_button, :device => :button
-  input_pin 11, :as => :battery_status_button, :device => :button
+
+  output_pin 19, :as => :wire, :device => :i2c #, :enable => :true
   
   # xbee used for communication with ground station
   serial_begin :rate => 19200
   
-  define "ELEVATOR_LOWER_DETANTE 517"
-  define "ELEVATOR_HIGHER_DETANTE 577"
+  define "ELEVATOR_LOWER_DETANTE 110"
+  define "ELEVATOR_HIGHER_DETANTE 136"
+  define "ELEVATOR_MAX 225"
+  define "ELEVATOR_MIN 29"
   define "ELEVATOR_CENTER 0"
   define "ELEVATOR_UP 1"
   define "ELEVATOR_DOWN 2"
   
-  define "RUDDER_LOWER_DETANTE 480"
-  define "RUDDER_HIGHER_DETANTE 540"
+  define "RUDDER_LOWER_DETANTE 110"
+  define "RUDDER_HIGHER_DETANTE 136"
+  define "RUDDER_MAX 225"
+  define "RUDDER_MIN 29"
   define "RUDDER_CENTER 0"
   define "RUDDER_LEFT 1"
   define "RUDDER_RIGHT 2"
@@ -72,6 +69,7 @@ class Houston < ArduinoSketch
   @last_response_time = "0, unsigned long"
   
   def loop
+    init_nunchuk
     softserial_sparkfun_lcd_init
     do_serial_parsing
     
@@ -86,31 +84,40 @@ class Houston < ArduinoSketch
   
   def check_controls
     if (millis() - @controls_last_refresh_time > @controls_refresh_rate)
-      @x = analogRead(joystick_x)
-      @y = analogRead(joystick_y)
-      @throttle_reading = analogRead(joystick_throttle)
+      read_nunchuk
+      
+      @x = joy_x_axis
+      @y = joy_y_axis
+      
+      #sprintf(@current_msg, "y: %d", @y)
+      @throttle_reading = 0
+      if z_button == 0
+        @throttle_reading = 1
+      end
+      if c_button == 0
+        @throttle_reading = -1
+      end
     
       set_elevator
       set_rudder
       set_throttle
-
-      check_buttons    
+      
+      #check_buttons    
   		
       @controls_last_refresh_time = millis()
     end
   end
   
-  def check_buttons
-  	set_autopilot_off if read_input autopilot_off_button
-  	set_autopilot_on if read_input autopilot_on_button
-  	check_battery_status if read_input battery_status_button
-  end
+  # def check_buttons
+  #   set_autopilot_off if read_input autopilot_off_button
+  #   set_autopilot_on if read_input autopilot_on_button
+  #   check_battery_status if read_input battery_status_button
+  # end
   
   def set_elevator
     if @y < ELEVATOR_LOWER_DETANTE
       @elevator_direction = ELEVATOR_UP
-      @deflection = 547 - @y
-      @deflection = (@deflection * 90.0) / 373
+      @deflection = 45
       
       if @elevator_deflection != @deflection
         @elevator_deflection = @deflection
@@ -123,9 +130,7 @@ class Houston < ArduinoSketch
     
     if @y > ELEVATOR_HIGHER_DETANTE
       @elevator_direction = ELEVATOR_DOWN
-      @deflection = 920 - @y
-      @deflection = (@deflection * 90.0) / 373
-      @deflection = 90 - @deflection
+      @deflection = 45
       
       if @elevator_deflection != @deflection
         @elevator_deflection = @deflection
@@ -154,8 +159,7 @@ class Houston < ArduinoSketch
   def set_rudder
     if @x < RUDDER_LOWER_DETANTE
       @rudder_direction = RUDDER_RIGHT
-      @deflection = 515 - @x
-      @rudder_deflection = (@deflection * 90.0) / 375
+      @deflection = 45
       
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
@@ -168,9 +172,7 @@ class Houston < ArduinoSketch
     
     if @x > RUDDER_HIGHER_DETANTE
       @rudder_direction = RUDDER_LEFT
-      @deflection = 890 - @x
-      @deflection = (@deflection * 90.0) / 375
-      @deflection = 90 - @deflection
+      @deflection = 45
       
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
@@ -195,11 +197,9 @@ class Houston < ArduinoSketch
   end
   
   def set_throttle
-    if @throttle_reading < THROTTLE_LOWER_DETANTE
+    if @throttle_reading < 0
       @throttle_direction = THROTTLE_REVERSE
-      @speed = @throttle_reading - 180.0
-      @speed = (@speed / 273.0) * 100.0
-      @speed = 100 - @speed
+      @speed = 30
 
       if @throttle_speed != @speed
         @throttle_speed = @speed
@@ -210,12 +210,9 @@ class Houston < ArduinoSketch
       end
     end
     
-    if @throttle_reading > THROTTLE_HIGHER_DETANTE
+    if @throttle_reading > 0
       @throttle_direction = THROTTLE_FORWARD
-      @speed = 921 - @throttle_reading
-      @speed = 273 - @speed
-      @speed = @speed * 10000
-      @speed = (@speed / 273) / 100.0
+      @speed = 30
       
       if @throttle_speed != @speed
         @throttle_speed = @speed
@@ -226,7 +223,7 @@ class Houston < ArduinoSketch
       end
     end
     
-    if (@throttle_reading >= THROTTLE_LOWER_DETANTE) && (@throttle_reading <= THROTTLE_HIGHER_DETANTE)
+    if @throttle_reading == 0
       @throttle_direction = THROTTLE_OFF
       
       if @throttle_speed != 0
