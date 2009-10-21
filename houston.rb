@@ -10,24 +10,22 @@ class Houston < ArduinoSketch
   # xbee used for communication with ground station
   serial_begin :rate => 19200
   
-  define "ELEVATOR_LOWER_DETANTE 110"
-  define "ELEVATOR_HIGHER_DETANTE 136"
-  define "ELEVATOR_MAX 225"
+  define "ELEVATOR_CENTER_LOWER_DETANTE 126"
+  define "ELEVATOR_CENTER_HIGHER_DETANTE 136"
+  define "ELEVATOR_MAX 230"
   define "ELEVATOR_MIN 29"
   define "ELEVATOR_CENTER 0"
   define "ELEVATOR_UP 1"
   define "ELEVATOR_DOWN 2"
   
-  define "RUDDER_LOWER_DETANTE 110"
-  define "RUDDER_HIGHER_DETANTE 136"
-  define "RUDDER_MAX 225"
+  define "RUDDER_CENTER_LOWER_DETANTE 128"
+  define "RUDDER_CENTER_HIGHER_DETANTE 139"
+  define "RUDDER_MAX 235"
   define "RUDDER_MIN 29"
   define "RUDDER_CENTER 0"
   define "RUDDER_LEFT 1"
   define "RUDDER_RIGHT 2"
 
-  define "THROTTLE_LOWER_DETANTE 450"
-  define "THROTTLE_HIGHER_DETANTE 648"
   define "THROTTLE_OFF 0"
   define "THROTTLE_REVERSE 2"
   define "THROTTLE_FORWARD 1"
@@ -89,7 +87,7 @@ class Houston < ArduinoSketch
       @x = joy_x_axis
       @y = joy_y_axis
       
-      #sprintf(@current_msg, "y: %d", @y)
+#      sprintf(@current_msg, "x: %d", @x)
       @throttle_reading = 0
       if z_button == 0
         @throttle_reading = 1
@@ -115,9 +113,13 @@ class Houston < ArduinoSketch
   # end
   
   def set_elevator
-    if @y < ELEVATOR_LOWER_DETANTE
+    if @y < ELEVATOR_CENTER_LOWER_DETANTE
       @elevator_direction = ELEVATOR_UP
-      @deflection = 45
+      
+      @deflection = @y - ELEVATOR_MIN
+      constrain(@deflection, 0, 100)
+      @deflection = (@deflection * 90.0) / 100
+      @deflection = 90 - @deflection
       
       if @elevator_deflection != @deflection
         @elevator_deflection = @deflection
@@ -128,9 +130,11 @@ class Houston < ArduinoSketch
       end
     end
     
-    if @y > ELEVATOR_HIGHER_DETANTE
+    if @y > ELEVATOR_CENTER_HIGHER_DETANTE
       @elevator_direction = ELEVATOR_DOWN
-      @deflection = 45
+      @deflection = @y - ELEVATOR_CENTER_HIGHER_DETANTE
+      constrain(@deflection, 0, 100)
+      @deflection = (@deflection * 90.0) / 100
       
       if @elevator_deflection != @deflection
         @elevator_deflection = @deflection
@@ -142,7 +146,7 @@ class Houston < ArduinoSketch
         
     end
     
-    if (@y >= ELEVATOR_LOWER_DETANTE) &&  (@y <= ELEVATOR_HIGHER_DETANTE)
+    if (@y >= ELEVATOR_CENTER_LOWER_DETANTE) && (@y <= ELEVATOR_CENTER_HIGHER_DETANTE)
       @elevator_direction = ELEVATOR_CENTER
       
       if @elevator_deflection != 0
@@ -157,9 +161,15 @@ class Houston < ArduinoSketch
   end
   
   def set_rudder
-    if @x < RUDDER_LOWER_DETANTE
+    if @x < RUDDER_CENTER_LOWER_DETANTE
       @rudder_direction = RUDDER_RIGHT
-      @deflection = 45
+      
+      @deflection = @x - RUDDER_MIN
+      constrain(@deflection, 0, 100)
+      @deflection = (@deflection * 90.0) / 100
+      @deflection = 90 - @deflection
+      
+      #@deflection = 45
       
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
@@ -170,9 +180,13 @@ class Houston < ArduinoSketch
       end
     end
     
-    if @x > RUDDER_HIGHER_DETANTE
+    if @x > RUDDER_CENTER_HIGHER_DETANTE
       @rudder_direction = RUDDER_LEFT
-      @deflection = 45
+      @deflection = @x - RUDDER_CENTER_HIGHER_DETANTE
+      constrain(@deflection, 0, 100)
+      @deflection = (@deflection * 90.0) / 100
+      
+      #@deflection = 45
       
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
@@ -183,7 +197,7 @@ class Houston < ArduinoSketch
       end
     end
     
-    if (@x >= RUDDER_LOWER_DETANTE) &&  (@x <= RUDDER_HIGHER_DETANTE)
+    if (@x >= RUDDER_CENTER_LOWER_DETANTE) &&  (@x <= RUDDER_CENTER_HIGHER_DETANTE)
       @rudder_direction = RUDDER_CENTER
       
       if @rudder_deflection != 0
