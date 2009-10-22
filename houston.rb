@@ -1,10 +1,13 @@
 # Houston - Flight stick for flying_robot command set for Ruby Arduino Development
 # Written by Ron Evans (http://deadprogrammersociety.com) for the flying_robot project
-
+#
+# Uses the 'Norris' branch code to connect a Wiimote Nunchuck as the control surface
+# Oh so much going on in this sketch, it probably requires a 328
 class Houston < ArduinoSketch
-  
+  # sparkfun LCD display
   software_serial 6, 7, :as => :my_lcd, :rate => 9600
 
+  # wiimote nunchuk
   output_pin 19, :as => :wire, :device => :i2c #, :enable => :true
   
   # xbee used for communication with ground station
@@ -58,9 +61,7 @@ class Houston < ArduinoSketch
   @response_length = "0, long"
   
   @message_to_display = false
-  #@message_to_display = "false, boolean"
   @messages_expected = "0, int"
-  #@messages_expected = 0
 
   # timeout
   @response_timeout_length = "1000, unsigned long"
@@ -169,8 +170,6 @@ class Houston < ArduinoSketch
       @deflection = (@deflection * 90.0) / 100
       @deflection = 90 - @deflection
       
-      #@deflection = 45
-      
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
         serial_print "r r "
@@ -185,8 +184,6 @@ class Houston < ArduinoSketch
       @deflection = @x - RUDDER_CENTER_HIGHER_DETANTE
       constrain(@deflection, 0, 100)
       @deflection = (@deflection * 90.0) / 100
-      
-      #@deflection = 45
       
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
