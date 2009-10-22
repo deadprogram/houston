@@ -1,12 +1,9 @@
 # Plugin for Ruby Arduino Development that allows use of the Wiimote Nunchuk
 # Written by Ron Evans (http://deadprogrammersociety.com) for the flying_robot project
 #
-# Based on code taken from the SparkFun forums: http://forum.sparkfun.com/viewtopic.php?t=6236
-# as well as code adapted to work with wireless Nunchuck controllers of third party vendors by Michael Dreher
+# Based on code taken from Tod Curt http://todbot.com/arduino/sketches/NunchuckServo/NunchuckServo.pde
 class WiimoteNunchuk < ArduinoPlugin
   include_wire
-  
-  #plugin_directives "#define TWI_FREQ 400000L"
   
   external_variables "int nunchukAddress = 0x52"
   external_variables "byte nunchukData[6]"
@@ -45,21 +42,6 @@ class WiimoteNunchuk < ArduinoPlugin
     
     nunchuck_setpowerpins();
     
-    // we need to switch the TWI speed, because the nunchuck uses Fast-TWI
-    // normally set in hardware\libraries\Wire\utility\twi.c twi_init()
-    // this is the way of doing it without modifying the original files
-    //TWBR = ((16000000L / TWI_FREQ_NUNCHUCK) - 16) / 2;
-    
-    // disable encryption
-    // look at <http://wiibrew.org/wiki/Wiimote#The_New_Way> at "The New Way"
-    //Wire.beginTransmission(nunchukAddress); // transmit to device 0x52
-    //Wire.send(0xF0); // sends memory address
-    //Wire.send(0x55); // sends data.
-    //Wire.endTransmission();
-    //Wire.beginTransmission(nunchukAddress); // transmit to device 0x52
-    //Wire.send(0xFB); // sends memory address
-    //Wire.send(0x00); // sends sent a zero.
-    //Wire.endTransmission();
     Wire.beginTransmission(nunchukAddress); // transmit to device 0x52
     Wire.send(0x40); // sends memory address
     Wire.send(0x00); // sends data.
@@ -76,14 +58,9 @@ class WiimoteNunchuk < ArduinoPlugin
   
   void send_zero()
   {
-    // I dont know why, but it only works correct when doing this exactly 3 times
-    // otherwise only each 3rd call reads data from the controller (cnt will be 0 the other times)
-    //for(byte i = 0; i < 3; i++)
-    //{
-      Wire.beginTransmission(nunchukAddress); // transmit to device 0x52
-      Wire.send(0x00); // sends one byte
-      Wire.endTransmission(); // stop transmitting
-    //}
+    Wire.beginTransmission(nunchukAddress); // transmit to device 0x52
+    Wire.send(0x00); // sends one byte
+    Wire.endTransmission(); // stop transmitting
   }
   
   char nunchuk_decode_byte(char x)
