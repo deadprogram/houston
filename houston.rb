@@ -13,8 +13,8 @@ class Houston < ArduinoSketch
   # xbee used for communication with ground station
   serial_begin :rate => 19200
   
-  define "ELEVATOR_CENTER_LOWER_DETANTE 126"
-  define "ELEVATOR_CENTER_HIGHER_DETANTE 136"
+  define "ELEVATOR_CENTER_LOWER_DETANTE 121"
+  define "ELEVATOR_CENTER_HIGHER_DETANTE 141"
   define "ELEVATOR_MAX 230"
   define "ELEVATOR_MIN 29"
   define "ELEVATOR_CENTER 0"
@@ -38,6 +38,8 @@ class Houston < ArduinoSketch
   
   @controls_refresh_rate = "100, unsigned long"
   @controls_last_refresh_time = "0, unsigned long"
+  @battery_refresh_rate = "10000, unsigned long"
+  @battery_last_refresh_time = "0, unsigned long"
   @x = "0, long"
   @y = "0, long"
   @throttle_reading = "0, long"
@@ -53,7 +55,7 @@ class Houston < ArduinoSketch
   @throttle_speed = "0, unsigned long"
   @throttle_direction = "1, byte" 
   
-  @display_refresh_rate = "1000, unsigned long"
+  @display_refresh_rate = "1250, unsigned long"
   @display_last_refresh_time = "0, unsigned long"
   
   @autopilot_status = "0, byte"
@@ -76,6 +78,7 @@ class Houston < ArduinoSketch
       process_messages
     else
       check_controls
+      check_battery_status
     end
   	
   	update_display
@@ -162,13 +165,12 @@ class Houston < ArduinoSketch
   end
   
   def set_rudder
-    if @x < RUDDER_CENTER_LOWER_DETANTE
+    if @x > RUDDER_CENTER_HIGHER_DETANTE
       @rudder_direction = RUDDER_RIGHT
       
-      @deflection = @x - RUDDER_MIN
+      @deflection = @x - RUDDER_CENTER_HIGHER_DETANTE
       constrain(@deflection, 0, 100)
       @deflection = (@deflection * 90.0) / 100
-      @deflection = 90 - @deflection
       
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
@@ -179,11 +181,13 @@ class Houston < ArduinoSketch
       end
     end
     
-    if @x > RUDDER_CENTER_HIGHER_DETANTE
+    if @x < RUDDER_CENTER_LOWER_DETANTE
       @rudder_direction = RUDDER_LEFT
-      @deflection = @x - RUDDER_CENTER_HIGHER_DETANTE
+      
+      @deflection = @x - RUDDER_MIN
       constrain(@deflection, 0, 100)
       @deflection = (@deflection * 90.0) / 100
+      @deflection = 90 - @deflection
       
       if @rudder_deflection != @deflection
         @rudder_deflection = @deflection
@@ -266,10 +270,14 @@ class Houston < ArduinoSketch
   end
   
   def check_battery_status
-    serial_print "i b"
-    serial_print '\r'
+    if (millis() - @battery_last_refresh_time > @battery_refresh_rate)
+      serial_print "i b"
+      serial_print '\r'
     
-    display_next_message
+      display_next_message
+      
+      @battery_last_refresh_time = millis()
+    end
   end
   
   def ignore_next_message
