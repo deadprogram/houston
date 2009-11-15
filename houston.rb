@@ -32,6 +32,7 @@ class Houston < ArduinoSketch
   define "THROTTLE_OFF 0"
   define "THROTTLE_REVERSE 2"
   define "THROTTLE_FORWARD 1"
+  define "THROTTLE_FULL_SPEED 40"
   
   define "AUTOPILOT_OFF 0"
   define "AUTOPILOT_ON 1"
@@ -214,7 +215,7 @@ class Houston < ArduinoSketch
   def set_throttle
     if @throttle_reading < 0
       @throttle_direction = THROTTLE_REVERSE
-      @speed = 30
+      @speed = THROTTLE_FULL_SPEED
 
       if @throttle_speed != @speed
         @throttle_speed = @speed
@@ -227,7 +228,7 @@ class Houston < ArduinoSketch
     
     if @throttle_reading > 0
       @throttle_direction = THROTTLE_FORWARD
-      @speed = 30
+      @speed = THROTTLE_FULL_SPEED
       
       if @throttle_speed != @speed
         @throttle_speed = @speed
