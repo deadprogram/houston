@@ -56,7 +56,7 @@ class Houston < ArduinoSketch
   @throttle_speed = "0, unsigned long"
   @throttle_direction = "1, byte" 
   
-  @display_refresh_rate = "1250, unsigned long"
+  @display_refresh_rate = "1000, unsigned long"
   @display_last_refresh_time = "0, unsigned long"
   
   @autopilot_status = "0, byte"
@@ -255,7 +255,7 @@ class Houston < ArduinoSketch
   def set_autopilot_off
     @autopilot_status = AUTOPILOT_OFF
     @current_msg = 'Autopilot is off'
-    serial_print "a 0"
+    serial_print "p 0"
     serial_print '\r'
     
     ignore_next_message
@@ -264,7 +264,7 @@ class Houston < ArduinoSketch
   def set_autopilot_on
     @autopilot_status = AUTOPILOT_ON
     @current_msg = 'Autopilot is on'
-    serial_print "a 1"
+    serial_print "p 1"
     serial_print '\r'
     
     ignore_next_message
@@ -298,9 +298,10 @@ class Houston < ArduinoSketch
   
   # timeout waiting for message, so give up waiting for the rest of them
   def timeout_waiting_for_response
-    if (millis() - last_response_time > @response_timeout_length)
+    if (millis() - last_message_sent_time > @response_timeout_length)
       @messages_expected = 0
-      reset_last_response
+      @message_to_display = false
+      reset_last_message_sent_time
       return true
     else
       return false
@@ -308,6 +309,7 @@ class Houston < ArduinoSketch
   end
   
   def process_response
+    reset_last_message_sent_time
     @messages_expected = @messages_expected - 1
     if @messages_expected == 0 && @message_to_display
       copy_response_buffer(@current_msg)

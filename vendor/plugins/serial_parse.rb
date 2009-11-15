@@ -8,7 +8,7 @@ class SerialParse < ArduinoPlugin
   external_variables "int max_message_length = 16;"
   external_variables "int max_response_length = 120;"
   external_variables "char response_buffer[120]"
-  external_variables "int last_response = 0"
+  external_variables "unsigned long last_message_sent = 0"
   
   
   # initialize parser vars
@@ -20,16 +20,16 @@ class SerialParse < ArduinoPlugin
     return current_response_received_complete ;
   }
   
-  int last_response_time() {
-    return last_response ;
+  unsigned long last_message_sent_time() {
+    return last_message_sent ;
   }
   
-  void reset_last_response() {
-    last_response = millis();
+  void reset_last_message_sent_time() {
+    last_message_sent = millis();
   }
   
   void copy_response_buffer(char* str) {
-    for(int i = 0; i < max_message_length; i++){
+    for(int i = 0; i < current_buffer_length; i++){
       str[i] = response_buffer[i] ;
     }    
   }
@@ -41,7 +41,6 @@ class SerialParse < ArduinoPlugin
     
     current_buffer_length = 0 ;
     current_response_received_complete = false ;
-    last_response = millis();
   }
   
   void read_response() {
@@ -58,7 +57,6 @@ class SerialParse < ArduinoPlugin
         current_buffer_length++ ;
       }
     }
-    last_response = millis();
   }
   
 end
